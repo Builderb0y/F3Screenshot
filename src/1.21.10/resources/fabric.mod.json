@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "f3screenshot",
+	"version": "${version}",
+	"name": "F3Screenshot",
+	"description": "Press F3 + F2 to save your F3 menu to a file and to your clipboard.",
+	"authors": [
+		"Builderb0y"
+	],
+	"contact": {},
+	"license": "MIT",
+	"icon": "assets/f3screenshot/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"builderb0y.f3screenshot.F3Screenshot"
+		]
+	},
+	"mixins": [
+		"f3screenshot.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.17.3",
+		"minecraft": [ "1.21.9", "1.21.10" ]
+	}
+}

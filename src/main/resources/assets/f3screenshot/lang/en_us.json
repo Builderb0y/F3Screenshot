@@ -1,0 +1,5 @@
+{
+	"f3screenshot.full_success": "Saved F3 data to %s and copied it to your clipboard.",
+	"f3screenshot.partial_success": "Saved F3 data to %s, but could not copy it to your clipboard: %s",
+	"f3screenshot.no_success": "Failed to save F3 data to file: %s"
+}
