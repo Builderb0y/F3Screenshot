@@ -20,12 +20,12 @@ import net.fabricmc.api.ClientModInitializer;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spongepowered.asm.mixin.MixinEnvironment;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.debug.DebugHudEntries;
-import net.minecraft.client.gui.hud.debug.DebugHudEntry;
-import net.minecraft.client.gui.hud.debug.DebugHudLines;
+import net.minecraft.entity.Entity;
 import net.minecraft.text.ClickEvent;
+import net.minecraft.text.ClickEvent.Action;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -34,6 +34,16 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.WorldChunk;
 
 import builderb0y.f3screenshot.mixins.DebugHudAccessor;
+
+#if MC_VERSION < MC_1_20_2
+	import builderb0y.f3screenshot.mixins.InGameHudAccessor;
+#endif
+
+#if MC_VERSION >= MC_1_21_9
+	import net.minecraft.client.gui.hud.debug.DebugHudEntries;
+	import net.minecraft.client.gui.hud.debug.DebugHudEntry;
+	import net.minecraft.client.gui.hud.debug.DebugHudLines;
+#endif
 
 public class F3Screenshot implements ClientModInitializer {
 
@@ -44,85 +54,167 @@ public class F3Screenshot implements ClientModInitializer {
 	public void onInitializeClient() {
 		System.setProperty("java.awt.headless", "false");
 		LOGGER.info("Set java.awt.headless to false.");
+		MixinEnvironment.getCurrentEnvironment().audit();
 	}
 
 	public static void saveF3(File screenshotsFolder, Consumer<Text> messageSender) {
-		TreeMap<String, TreeMap<String, List<String>>> sections = collectDebugInformation();
+		#if MC_VERSION < MC_1_21_9
+			if (MinecraftClient.getInstance().getCameraEntity() == null) return;
+		#endif
 		File f3File = getSaveFile(screenshotsFolder);
-		Throwable saveException = saveF3Data(f3File, sections);
+		Throwable saveException = saveF3Data(f3File);
 		if (saveException == null) {
 			Throwable copyException = copyFile(f3File);
 			if (copyException == null) {
 				messageSender.accept(
 					Text
 					.translatableWithFallback(
-						"f3screenshot.full_success",
+						"f3screenshot.f3.full_success",
 						"Saved F3 data to %s and copied it to your clipboard.",
 						f3File.getName()
 					)
-					.styled((Style style) -> style.withClickEvent(new ClickEvent.OpenFile(f3File)))
+					.styled((Style style) -> style.withClickEvent(
+						#if MC_VERSION >= MC_1_21_5
+							new ClickEvent.OpenFile(f3File)
+						#else
+							new ClickEvent(Action.OPEN_FILE, f3File.getAbsolutePath())
+						#endif
+					))
 				);
 			}
 			else {
 				messageSender.accept(
 					Text
 					.translatableWithFallback(
-						"f3screenshot.partial_success",
+						"f3screenshot.f3.partial_success",
 						"Saved F3 data to %s, but could not copy it to your clipboard: %s",
 						f3File.getName(),
 						copyException.getLocalizedMessage()
 					)
-					.styled((Style style) -> style.withClickEvent(new ClickEvent.OpenFile(f3File)))
+					.styled((Style style) -> style.withClickEvent(
+						#if MC_VERSION >= MC_1_21_5
+							new ClickEvent.OpenFile(f3File)
+						#else
+							new ClickEvent(Action.OPEN_FILE, f3File.getAbsolutePath())
+						#endif
+					))
 				);
 			}
 		}
 		else {
-			messageSender.accept(Text.translatable(
-				"f3screenshot.no_success",
+			messageSender.accept(Text.translatableWithFallback(
+				"f3screenshot.f3.no_success",
 				"Failed to save F3 data to file: %s",
 				saveException
 			));
 		}
 	}
 
-	public static TreeMap<String, TreeMap<String, List<String>>> collectDebugInformation() {
-		TreeMap<String, TreeMap<String, List<String>>> lineSections = new TreeMap<>();
-		var debugHudLines = new DebugHudLines() {
+	#if MC_VERSION >= MC_1_21_9
 
-			public String key;
+		public static TreeMap<String, TreeMap<String, List<String>>> collectDebugInformation() {
+			TreeMap<String, TreeMap<String, List<String>>> lineSections = new TreeMap<>();
+			var debugHudLines = new DebugHudLines() {
 
-			@Override
-			public void addPriorityLine(String line) {
-				lineSections.computeIfAbsent(MISC, $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
-			}
+				public String key;
 
-			@Override
-			public void addLine(String line) {
-				lineSections.computeIfAbsent(MISC, $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
-			}
-
-			@Override
-			public void addLinesToSection(Identifier sectionId, Collection<String> lines) {
-				if (!lines.isEmpty()) {
-					lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).addAll(lines);
+				@Override
+				public void addPriorityLine(String line) {
+					lineSections.computeIfAbsent(MISC, $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
 				}
-			}
 
-			@Override
-			public void addLineToSection(Identifier sectionId, String line) {
-				lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
+				@Override
+				public void addLine(String line) {
+					lineSections.computeIfAbsent(MISC, $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
+				}
+
+				@Override
+				public void addLinesToSection(Identifier sectionId, Collection<String> lines) {
+					if (!lines.isEmpty()) {
+						lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).addAll(lines);
+					}
+				}
+
+				@Override
+				public void addLineToSection(Identifier sectionId, String line) {
+					lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
+				}
+			};
+			DebugHudAccessor accessor = (DebugHudAccessor)(MinecraftClient.getInstance().getDebugHud());
+			World world = accessor.f3Screenshot_getWorld();
+			WorldChunk clientChunk = accessor.f3Screenshot_getClientChunk();
+			WorldChunk serverChunk = accessor.f3Screenshot_getServerChunk();
+			for (Map.Entry<Identifier, DebugHudEntry> entry : DebugHudEntries.getEntries().entrySet()) {
+				debugHudLines.key = entry.getKey().toString() + " (" + entry.getValue().getClass() + ')';
+				entry.getValue().render(debugHudLines, world, clientChunk, serverChunk);
 			}
-		};
-		DebugHudAccessor accessor = (DebugHudAccessor)(MinecraftClient.getInstance().getDebugHud());
-		World world = accessor.f3Screenshot_getWorld();
-		WorldChunk clientChunk = accessor.f3Screenshot_getClientChunk();
-		WorldChunk serverChunk = accessor.f3Screenshot_getServerChunk();
-		for (Map.Entry<Identifier, DebugHudEntry> entry : DebugHudEntries.getEntries().entrySet()) {
-			debugHudLines.key = entry.getKey().toString() + " (" + entry.getValue().getClass() + ')';
-			entry.getValue().render(debugHudLines, world, clientChunk, serverChunk);
+			return lineSections;
 		}
-		return lineSections;
-	}
+
+		public static Throwable saveF3Data(File f3File) {
+			TreeMap<String, TreeMap<String, List<String>>> sections = collectDebugInformation();
+			try (BufferedWriter writer = Files.newBufferedWriter(f3File.toPath(), StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW)) {
+				for (Map.Entry<String, TreeMap<String, List<String>>> outer : sections.entrySet()) {
+					writer.append(outer.getKey()).append(':').append('\n');
+					for (Map.Entry<String, List<String>> inner : outer.getValue().entrySet()) {
+						writer.append('\t').append(inner.getKey()).append(':').append('\n');
+						for (String line : inner.getValue()) {
+							writer.append('\t').append('\t').append(line).append('\n');
+						}
+					}
+				}
+				return null;
+			}
+			catch (Exception exception) {
+				LOGGER.error("Failed to save F3 data to file:", exception);
+				return exception;
+			}
+		}
+
+	#else
+
+		public static Throwable saveF3Data(File f3File) {
+			try (BufferedWriter writer = Files.newBufferedWriter(f3File.toPath(), StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW)) {
+				#if MC_VERSION >= MC_1_20_2
+					DebugHudAccessor accessor = (
+						(DebugHudAccessor)(
+							MinecraftClient.getInstance().getDebugHud()
+						)
+					);
+				#else
+					DebugHudAccessor accessor = (
+						(DebugHudAccessor)(
+							(
+								(InGameHudAccessor)(
+									MinecraftClient.getInstance().inGameHud
+								)
+							)
+							.f3Screenshot_getDebugHud()
+						)
+					);
+				#endif
+				//workaround vanilla assumption that these fields are populated in render() before get(Left|Right)Text() is called.
+				Entity entity = MinecraftClient.getInstance().getCameraEntity();
+				accessor.f3Screenshot_setBlockHit(entity.raycast(20.0D, 0.0F, false));
+				accessor.f3Screenshot_setFluidHit(entity.raycast(20.0D, 0.0F, true));
+
+				writer.write("Left:");
+				for (String line : accessor.f3Screenshot_getLeftText()) {
+					writer.append('\n').append('\t').write(line);
+				}
+				writer.write("\n\nRight:");
+				for (String line : accessor.f3Screenshot_getRightText()) {
+					writer.append('\n').append('\t').write(line);
+				}
+				return null;
+			}
+			catch (Exception exception) {
+				LOGGER.error("Failed to save F3 data to file:", exception);
+				return exception;
+			}
+		}
+
+	#endif
 
 	public static File getSaveFile(File screenshotsFolder) {
 		String time = Util.getFormattedCurrentTime();
@@ -132,25 +224,6 @@ public class F3Screenshot implements ClientModInitializer {
 		for (int attempt = 2; true; attempt++) {
 			file = new File(screenshotsFolder, time + '_' + attempt + "_F3.txt");
 			if (!file.exists()) return file;
-		}
-	}
-
-	public static Throwable saveF3Data(File f3File, TreeMap<String, TreeMap<String, List<String>>> sections) {
-		try (BufferedWriter writer = Files.newBufferedWriter(f3File.toPath(), StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW)) {
-			for (Map.Entry<String, TreeMap<String, List<String>>> outer : sections.entrySet()) {
-				writer.append(outer.getKey()).append(':').append('\n');
-				for (Map.Entry<String, List<String>> inner : outer.getValue().entrySet()) {
-					writer.append('\t').append(inner.getKey()).append(':').append('\n');
-					for (String line : inner.getValue()) {
-						writer.append('\t').append('\t').append(line).append('\n');
-					}
-				}
-			}
-			return null;
-		}
-		catch (Exception exception) {
-			LOGGER.error("Failed to save F3 data to file:", exception);
-			return exception;
 		}
 	}
 

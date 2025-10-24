@@ -2,13 +2,9 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "builderb0y.f3screenshot.mixins",
-	"compatibilityLevel": "JAVA_21",
-	"mixins": [],
-	"client": [
-		"DebugHudAccessor",
-		"KeyboardMixin",
-		"ScreenshotRecorderMixin"
-	],
+	"compatibilityLevel": "JAVA_17",
+	"mixins": [ ],
+	"client": [ "DebugHudAccessor", "InGameHudAccessor", "KeyboardMixin", "ScreenshotRecorderMixin" ],
 	"injectors": {
 		"defaultRequire": 1
 	},

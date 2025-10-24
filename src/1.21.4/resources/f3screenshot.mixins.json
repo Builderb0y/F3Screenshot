@@ -3,11 +3,10 @@
 	"minVersion": "0.8",
 	"package": "builderb0y.f3screenshot.mixins",
 	"compatibilityLevel": "JAVA_21",
-	"mixins": [],
+	"mixins": [ ],
 	"client": [
 		"DebugHudAccessor",
-		"KeyboardMixin",
-		"ScreenshotRecorderMixin"
+		"KeyboardMixin", "ScreenshotRecorderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

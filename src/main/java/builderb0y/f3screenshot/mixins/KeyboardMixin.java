@@ -25,10 +25,13 @@ public class KeyboardMixin {
 
 	@Shadow @Final private MinecraftClient client;
 
+	@Shadow private boolean switchF3State;
+
 	@WrapWithCondition(method = "onKey", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/ScreenshotRecorder;saveScreenshot(Ljava/io/File;Lnet/minecraft/client/gl/Framebuffer;Ljava/util/function/Consumer;)V"))
 	private boolean f3Screenshot_saveF3DataInstead(File gameDirectory, Framebuffer framebuffer, Consumer<Text> messageReceiver) {
-		if (InputUtil.isKeyPressed(this.client.getWindow(), InputUtil.GLFW_KEY_F3)) {
+		if (InputUtil.isKeyPressed(this.client.getWindow() #if MC_VERSION < MC_1_21_9 .getHandle() #endif, InputUtil.GLFW_KEY_F3)) {
 			F3Screenshot.saveF3(new File(gameDirectory, "screenshots"), messageReceiver);
+			this.switchF3State = true;
 			return false;
 		}
 		return true;
