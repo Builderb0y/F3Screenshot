@@ -41,6 +41,9 @@ dependencies() {
 	//modRuntimeOnly("net.fabricmc.fabric-api:fabric-api:${ project.fabric_version }")
 
 	annotationProcessor('systems.manifold:manifold-preprocessor:2025.1.27')
+
+	testImplementation('org.junit.jupiter:junit-jupiter:5.7.1')
+	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 }
 
 compileJava() {
@@ -83,11 +86,11 @@ java() {
 }
 
 tasks.register('copyToReleases', Copy) {
-	dependsOn(jar)
+	dependsOn(assemble)
 	from("$projectDir/build/libs") {
-		include("${ base.archivesName }-${ project.version }.jar")
+		include("${ archives_base_name }-${ project.version }.jar")
 		rename() {
-			"${ base.archivesName }-$project.version-MC${ minecraft_version }.jar"
+			"${ archives_base_name }-$project.version-MC${ minecraft_version }.jar"
 		}
 	}
 	into(file("releases/${ project.version.toString().replace('.' as char, '/' as char) }"))
@@ -95,16 +98,17 @@ tasks.register('copyToReleases', Copy) {
 
 jar() {
 	from("LICENSE") {
-		rename() { "${ it }_${ base.archivesName } }" }
+		rename() { "${ it }_${ archives_base_name } }" }
 	}
 }
 
 test() {
 	doFirst() {
-		if (file("releases/${project.version.toString().replace('.' as char, '/' as char)}/${ base.archivesName }-$project.version-MC${minecraft_version}.jar").exists()) {
+		if (file("releases/${project.version.toString().replace('.' as char, '/' as char)}/${ archives_base_name }-$project.version-MC${minecraft_version}.jar").exists()) {
 			throw new IllegalStateException("Release file $project.version-MC$minecraft_version already exists. If you intend to overwrite this file, delete it first. Otherwise, you probably forgot to bump the version.")
 		}
 	}
+	useJUnitPlatform()
 }
 
 build() {

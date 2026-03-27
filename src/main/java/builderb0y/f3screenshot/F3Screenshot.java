@@ -42,7 +42,7 @@ public class F3Screenshot implements ClientModInitializer {
 	public void onInitializeClient() {
 		System.setProperty("java.awt.headless", "false");
 		LOGGER.info("Set java.awt.headless to false.");
-		MixinEnvironment.getCurrentEnvironment().audit();
+		//MixinEnvironment.getCurrentEnvironment().audit();
 	}
 
 	public static void saveF3(File screenshotsFolder, Consumer<Component> messageSender) {
