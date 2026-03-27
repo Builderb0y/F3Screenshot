@@ -59,9 +59,7 @@ public class F3Screenshot implements ClientModInitializer {
 						f3File.getName()
 					)
 					.withStyle((Style style) -> style.withClickEvent(
-
 						new ClickEvent.OpenFile(f3File)
-
 					))
 				);
 			}
@@ -75,9 +73,7 @@ public class F3Screenshot implements ClientModInitializer {
 						copyException.getLocalizedMessage()
 					)
 					.withStyle((Style style) -> style.withClickEvent(
-
 						new ClickEvent.OpenFile(f3File)
-
 					))
 				);
 			}
@@ -99,24 +95,24 @@ public class F3Screenshot implements ClientModInitializer {
 
 			@Override
 			public void addPriorityLine(String line) {
-				lineSections.computeIfAbsent(MISC, $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
+				lineSections.computeIfAbsent(MISC, (String $) -> new TreeMap<>()).computeIfAbsent(this.key, (String $) -> new ArrayList<>()).add(line);
 			}
 
 			@Override
 			public void addLine(String line) {
-				lineSections.computeIfAbsent(MISC, $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
+				lineSections.computeIfAbsent(MISC, (String $) -> new TreeMap<>()).computeIfAbsent(this.key, (String $) -> new ArrayList<>()).add(line);
 			}
 
 			@Override
 			public void addToGroup(Identifier sectionId, Collection<String> lines) {
 				if (!lines.isEmpty()) {
-					lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).addAll(lines);
+					lineSections.computeIfAbsent(sectionId.toString(), (String $) -> new TreeMap<>()).computeIfAbsent(this.key, (String $) -> new ArrayList<>()).addAll(lines);
 				}
 			}
 
 			@Override
 			public void addToGroup(Identifier sectionId, String line) {
-				lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
+				lineSections.computeIfAbsent(sectionId.toString(), (String $) -> new TreeMap<>()).computeIfAbsent(this.key, (String $) -> new ArrayList<>()).add(line);
 			}
 		};
 		DebugHudAccessor accessor = (DebugHudAccessor)(Minecraft.getInstance().getDebugOverlay());
