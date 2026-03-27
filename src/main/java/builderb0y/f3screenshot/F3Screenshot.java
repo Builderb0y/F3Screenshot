@@ -20,19 +20,17 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.MixinEnvironment;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.debug.DebugHudEntries;
-import net.minecraft.client.gui.hud.debug.DebugHudEntry;
-import net.minecraft.client.gui.hud.debug.DebugHudLines;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.debug.DebugScreenDisplayer;
+import net.minecraft.client.gui.components.debug.DebugScreenEntries;
+import net.minecraft.client.gui.components.debug.DebugScreenEntry;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.WorldChunk;
-
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
 import builderb0y.f3screenshot.mixins.DebugHudAccessor;
 
 public class F3Screenshot implements ClientModInitializer {
@@ -47,20 +45,20 @@ public class F3Screenshot implements ClientModInitializer {
 		MixinEnvironment.getCurrentEnvironment().audit();
 	}
 
-	public static void saveF3(File screenshotsFolder, Consumer<Text> messageSender) {
+	public static void saveF3(File screenshotsFolder, Consumer<Component> messageSender) {
 		File f3File = getSaveFile(screenshotsFolder);
 		Throwable saveException = saveF3Data(f3File);
 		if (saveException == null) {
 			Throwable copyException = copyFile(f3File);
 			if (copyException == null) {
 				messageSender.accept(
-					Text
+					Component
 					.translatableWithFallback(
 						"f3screenshot.f3.full_success",
 						"Saved F3 data to %s and copied it to your clipboard.",
 						f3File.getName()
 					)
-					.styled((Style style) -> style.withClickEvent(
+					.withStyle((Style style) -> style.withClickEvent(
 
 						new ClickEvent.OpenFile(f3File)
 
@@ -69,14 +67,14 @@ public class F3Screenshot implements ClientModInitializer {
 			}
 			else {
 				messageSender.accept(
-					Text
+					Component
 					.translatableWithFallback(
 						"f3screenshot.f3.partial_success",
 						"Saved F3 data to %s, but could not copy it to your clipboard: %s",
 						f3File.getName(),
 						copyException.getLocalizedMessage()
 					)
-					.styled((Style style) -> style.withClickEvent(
+					.withStyle((Style style) -> style.withClickEvent(
 
 						new ClickEvent.OpenFile(f3File)
 
@@ -85,7 +83,7 @@ public class F3Screenshot implements ClientModInitializer {
 			}
 		}
 		else {
-			messageSender.accept(Text.translatableWithFallback(
+			messageSender.accept(Component.translatableWithFallback(
 				"f3screenshot.f3.no_success",
 				"Failed to save F3 data to file: %s",
 				saveException
@@ -95,7 +93,7 @@ public class F3Screenshot implements ClientModInitializer {
 
 	public static TreeMap<String, TreeMap<String, List<String>>> collectDebugInformation() {
 		TreeMap<String, TreeMap<String, List<String>>> lineSections = new TreeMap<>();
-		var debugHudLines = new DebugHudLines() {
+		var debugHudLines = new DebugScreenDisplayer() {
 
 			public String key;
 
@@ -110,24 +108,24 @@ public class F3Screenshot implements ClientModInitializer {
 			}
 
 			@Override
-			public void addLinesToSection(Identifier sectionId, Collection<String> lines) {
+			public void addToGroup(Identifier sectionId, Collection<String> lines) {
 				if (!lines.isEmpty()) {
 					lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).addAll(lines);
 				}
 			}
 
 			@Override
-			public void addLineToSection(Identifier sectionId, String line) {
+			public void addToGroup(Identifier sectionId, String line) {
 				lineSections.computeIfAbsent(sectionId.toString(), $ -> new TreeMap<>()).computeIfAbsent(this.key, $ -> new ArrayList<>()).add(line);
 			}
 		};
-		DebugHudAccessor accessor = (DebugHudAccessor)(MinecraftClient.getInstance().getDebugHud());
-		World world = accessor.f3Screenshot_getWorld();
-		WorldChunk clientChunk = accessor.f3Screenshot_getClientChunk();
-		WorldChunk serverChunk = accessor.f3Screenshot_getServerChunk();
-		for (Map.Entry<Identifier, DebugHudEntry> entry : DebugHudEntries.getEntries().entrySet()) {
+		DebugHudAccessor accessor = (DebugHudAccessor)(Minecraft.getInstance().getDebugOverlay());
+		Level world = accessor.f3Screenshot_getWorld();
+		LevelChunk clientChunk = accessor.f3Screenshot_getClientChunk();
+		LevelChunk serverChunk = accessor.f3Screenshot_getServerChunk();
+		for (Map.Entry<Identifier, DebugScreenEntry> entry : DebugScreenEntries.allEntries().entrySet()) {
 			debugHudLines.key = entry.getKey().toString() + " (" + entry.getValue().getClass() + ')';
-			entry.getValue().render(debugHudLines, world, clientChunk, serverChunk);
+			entry.getValue().display(debugHudLines, world, clientChunk, serverChunk);
 		}
 		return lineSections;
 	}
@@ -153,7 +151,7 @@ public class F3Screenshot implements ClientModInitializer {
 	}
 
 	public static File getSaveFile(File screenshotsFolder) {
-		String time = Util.getFormattedCurrentTime();
+		String time = Util.getFilenameFormattedDateTime();
 		File file = new File(screenshotsFolder, time + "_F3.txt");
 		if (!file.exists()) return file;
 
