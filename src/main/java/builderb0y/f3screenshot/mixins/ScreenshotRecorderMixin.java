@@ -15,7 +15,14 @@ import com.mojang.blaze3d.platform.NativeImage;
 @Mixin(Screenshot.class)
 public class ScreenshotRecorderMixin {
 
-	@Inject(method = "lambda$grab$1", at = @At(value = "INVOKE", target = "java/util/function/Consumer.accept(Ljava/lang/Object;)V", shift = Shift.AFTER))
+	@Inject(
+		#if MC_VERSION >= MC_26_2_0
+			method = "lambda$grab$3",
+		#else
+			method = "lambda$grab$1",
+		#endif
+		at = @At(value = "INVOKE", target = "java/util/function/Consumer.accept(Ljava/lang/Object;)V", shift = Shift.AFTER)
+	)
 	private static void f3Screenshot_copyToClipboard(NativeImage nativeImage, File file, Consumer<Component> messageSender, CallbackInfo callback) {
 		Throwable throwable = F3Screenshot.copyFile(file);
 		if (throwable != null) {
